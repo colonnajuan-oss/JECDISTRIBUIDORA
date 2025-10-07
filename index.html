@@ -40,7 +40,7 @@
     if (session) {
       document.getElementById("auth").style.display = "none";
       document.getElementById("zona-privada").style.display = "block";
-      const { data, error } = await supabase.storage.from("privado").createSignedUrl("listas/Lista_JEC.pdf", 600);
+      const { data, error } = await supabase.storage.from("privado").createSignedUrl("listas/LISTA DE PRECIO (DISTRIBUIDORA).pdf", 600);
       if (!error && data && data.signedUrl) {
         document.getElementById("btn-descarga").href = data.signedUrl;
       } else {
