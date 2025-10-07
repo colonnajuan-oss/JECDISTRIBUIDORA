@@ -5,23 +5,28 @@
   <title>Acceso JEC Distribuidora</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="https://unpkg.com/@supabase/auth-ui-shared@0.1.8/dist/styles.css"/>
-  <script src="https://unpkg.com/@supabase/auth-ui-js@0.4.7"></script>
   <style>
     body{font-family:sans-serif;background:#000;color:#fff;text-align:center;padding:40px}
     h2{color:#e10600}
     .card{max-width:420px;margin:auto;background:#111;padding:30px;border-radius:14px}
-    a.btn{background:#e10600;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}
+    input{display:block;margin:10px auto;padding:10px;width:90%;border-radius:8px;border:none}
+    button{padding:10px 16px;margin:5px;background:#e10600;color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
+    a.btn{display:inline-block;background:#e10600;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}
   </style>
 </head>
 <body>
   <div class="card">
     <h2>Acceso Clientes JEC</h2>
-    <div id="auth"></div>
+    <div id="auth">
+      <input type="email" id="email" placeholder="Correo electrónico" required />
+      <input type="password" id="password" placeholder="Contraseña" required />
+      <button id="login">Iniciar sesión</button>
+      <button id="signup">Registrarse</button>
+    </div>
     <div id="zona-privada" style="display:none;">
       <p>Bienvenido 👋</p>
       <a id="btn-descarga" class="btn" href="#" target="_blank">Descargar Lista de Precios</a>
-      <p><a href="#" id="btn-cerrar">Cerrar sesión</a></p>
+      <button id="logout">Cerrar sesión</button>
     </div>
   </div>
 
@@ -29,29 +34,54 @@
   const SUPABASE_URL = "https://jgipveytsfbuwzmwrufe.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnaXB2ZXl0c2ZidXd6bXdydWZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4NDU0MTgsImV4cCI6MjA3NTQyMTQxOH0.3GdhC9xJ5c5yg2hMAaKIhjwBAKwz1K_-UPv6D1J_eGE";
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { Auth } = window["@supabase/auth-ui-js"];
-  Auth.createClient(supabase).mount("#auth", { theme: "dark" });
 
-  const zonaPrivada = document.getElementById("zona-privada");
-  const btnDescarga = document.getElementById("btn-descarga");
-  const btnCerrar = document.getElementById("btn-cerrar");
-
-  async function actualizarEstado() {
+  async function checkSession() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      document.getElementById("auth").style.display="none";
-      zonaPrivada.style.display="block";
-      const { data } = await supabase.storage.from("privado").createSignedUrl("listas/Lista_JEC.pdf", 600);
-      btnDescarga.href = data?.signedUrl || "#";
+      document.getElementById("auth").style.display = "none";
+      document.getElementById("zona-privada").style.display = "block";
+      const { data, error } = await supabase.storage.from("privado").createSignedUrl("listas/Lista_JEC.pdf", 600);
+      if (!error && data && data.signedUrl) {
+        document.getElementById("btn-descarga").href = data.signedUrl;
+      } else {
+        document.getElementById("btn-descarga").textContent = "Archivo no disponible";
+      }
     } else {
-      document.getElementById("auth").style.display="block";
-      zonaPrivada.style.display="none";
+      document.getElementById("auth").style.display = "block";
+      document.getElementById("zona-privada").style.display = "none";
     }
   }
 
-  supabase.auth.onAuthStateChange(() => actualizarEstado());
-  btnCerrar.onclick = async e => { e.preventDefault(); await supabase.auth.signOut(); actualizarEstado(); };
-  actualizarEstado();
+  document.getElementById("login").addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      alert(error.message || "Error al iniciar sesión");
+    }
+    checkSession();
+  });
+
+  document.getElementById("signup").addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      alert(error.message || "Error al registrarse");
+    }
+    checkSession();
+  });
+
+  document.getElementById("logout").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    checkSession();
+  });
+
+  supabase.auth.onAuthStateChange(() => {
+    checkSession();
+  });
+
+  checkSession();
 </script>
 </body>
 </html>
