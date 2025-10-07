@@ -36,18 +36,26 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnaXB2ZXl0c2ZidXd6bXdydWZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4NDU0MTgsImV4cCI6MjA3NTQyMTQxOH0.3GdhC9xJ5c5yg2hMAaKIhjwBAKwz1K_-UPv6D1J_eGE";
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // Comprueba la sesión actual del usuario utilizando la API v1.
   async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    // En Supabase JS v1 la sesión se obtiene con supabase.auth.session()
+    const session = supabase.auth.session();
     if (session) {
+      // Ocultar el formulario de autenticación y mostrar la zona privada
       document.getElementById("auth").style.display = "none";
       document.getElementById("zona-privada").style.display = "block";
-      const { data, error } = await supabase.storage.from("privado").createSignedUrl("listas/LISTA DE PRECIO (DISTRIBUIDORA).pdf", 600);
+      // Obtener URL firmada del archivo de lista de precios
+      const { data, error } = await supabase.storage
+        .from("privado")
+        .createSignedUrl("listas/LISTA DE PRECIO (DISTRIBUIDORA).pdf", 600);
       if (!error && data && data.signedUrl) {
         document.getElementById("btn-descarga").href = data.signedUrl;
       } else {
-        document.getElementById("btn-descarga").textContent = "Archivo no disponible";
+        document.getElementById("btn-descarga").textContent =
+          "Archivo no disponible";
       }
     } else {
+      // Mostrar el formulario y ocultar la zona privada si no hay sesión
       document.getElementById("auth").style.display = "block";
       document.getElementById("zona-privada").style.display = "none";
     }
@@ -56,7 +64,8 @@
   document.getElementById("login").addEventListener("click", async () => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // En la versión v1 se usa supabase.auth.signIn()
+    const { error } = await supabase.auth.signIn({ email, password });
     if (error) {
       alert(error.message || "Error al iniciar sesión");
     }
@@ -78,10 +87,12 @@
     checkSession();
   });
 
-  supabase.auth.onAuthStateChange(() => {
+  // Suscribirse a los cambios de estado de autenticación
+  supabase.auth.onAuthStateChange((event, session) => {
     checkSession();
   });
 
+  // Comprobar la sesión al cargar la página
   checkSession();
 </script>
 </body>
