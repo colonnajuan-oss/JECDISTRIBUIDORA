@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Acceso JEC Distribuidora</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@supabase/auth-ui-shared@0.1.8/dist/styles.css"/>
+  <script src="https://unpkg.com/@supabase/auth-ui-js@0.4.7"></script>
+  <style>
+    body{font-family:sans-serif;background:#000;color:#fff;text-align:center;padding:40px}
+    h2{color:#e10600}
+    .card{max-width:420px;margin:auto;background:#111;padding:30px;border-radius:14px}
+    a.btn{background:#e10600;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Acceso Clientes JEC</h2>
+    <div id="auth"></div>
+    <div id="zona-privada" style="display:none;">
+      <p>Bienvenido 👋</p>
+      <a id="btn-descarga" class="btn" href="#" target="_blank">Descargar Lista de Precios</a>
+      <p><a href="#" id="btn-cerrar">Cerrar sesión</a></p>
+    </div>
+  </div>
+
+<script>
+  const SUPABASE_URL = "https://TU_PROYECTO.supabase.co";
+  const SUPABASE_ANON_KEY = "TU_ANON_KEY";
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { Auth } = window["@supabase/auth-ui-js"];
+  Auth.createClient(supabase).mount("#auth", { theme: "dark" });
+
+  const zonaPrivada = document.getElementById("zona-privada");
+  const btnDescarga = document.getElementById("btn-descarga");
+  const btnCerrar = document.getElementById("btn-cerrar");
+
+  async function actualizarEstado() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      document.getElementById("auth").style.display="none";
+      zonaPrivada.style.display="block";
+      const { data } = await supabase.storage.from("privado").createSignedUrl("listas/Lista_JEC.pdf", 600);
+      btnDescarga.href = data?.signedUrl || "#";
+    } else {
+      document.getElementById("auth").style.display="block";
+      zonaPrivada.style.display="none";
+    }
+  }
+
+  supabase.auth.onAuthStateChange(() => actualizarEstado());
+  btnCerrar.onclick = async e => { e.preventDefault(); await supabase.auth.signOut(); actualizarEstado(); };
+  actualizarEstado();
+</script>
+</body>
+</html>
